@@ -1,0 +1,30 @@
+name: Sincronizar Google Drive com GitHub
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Roda automaticamente todos os dias à meia-noite (pode mudar o horário)
+  workflow_dispatch: # Permite que você clique em um botão para rodar manualmente quando quiser
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Autenticar no Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
+
+      - name: Exportar Docs para Markdown
+        uses: r7kamura/google-docs-to-markdown@v0
+        with:
+          google_drive_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+
+      - name: Enviar alterações para o repositório
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Docs atualizados do Google Drive" && git push)
